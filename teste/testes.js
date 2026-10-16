@@ -29,9 +29,9 @@
   }
 
   const ESPERADO_COMPAT = [
-    ['Caio', 'Festa de casamento', '🐌🐨🐷'],
-    ['Duda', 'Boate', '🦉🐰🐌'],
-    ['Beto', 'Usina nuclear', '🦆🐴🐯'],
+    ['Caio', 'Estádio de futebol', '🦄🐹🐧'],
+    ['Ana', 'Navio pirata', '🐰🦄🐹'],
+    ['Caio', 'Zoológico', '🐍🦁🐱'],
   ];
 
   const NOMES = ['Ana', 'Beto', 'Caio', 'Duda', 'Érica', 'Fábio', 'Gil', 'Helô', 'Ivo', 'Jô'];
@@ -127,6 +127,16 @@
           vistos.add(sortear('c' + s, NOMES.slice(0, 4), r).local.nome);
         }
         igual(vistos.size, locais.length, 'locais únicos no ciclo ' + ciclo);
+      }
+    }
+  });
+
+  teste('entrar ou sair alguém não muda a sequência de locais', () => {
+    for (let s = 0; s < 20; s++) {
+      for (let r = 1; r <= 60; r++) {
+        const a = sortear('t' + s, NOMES.slice(0, 4), r).local.nome;
+        const b = sortear('t' + s, NOMES.slice(1, 7), r).local.nome;
+        igual(b, a, 'local (s=' + s + ', r=' + r + ')');
       }
     }
   });

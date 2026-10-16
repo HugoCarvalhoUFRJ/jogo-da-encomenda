@@ -14,6 +14,8 @@
   --vermelho-escuro: #8e1b1b;
   --botao: #c62828;
   --azul: #1f3a93;
+  --talvez: #b07800;
+  --talvez-fundo: #fff0c2;
   --fita: rgba(240, 226, 186, 0.82);
   --caixa: #b98a5a;
   --caixa-borda: #8f6338;
@@ -40,6 +42,8 @@
     --vermelho-escuro: #8a221c;
     --botao: #c9372d;
     --azul: #8aa4ff;
+    --talvez: #f2c14e;
+    --talvez-fundo: #4d3c17;
     --fita: rgba(170, 150, 110, 0.55);
     --caixa: #8a6440;
     --caixa-borda: #5e4128;
@@ -211,7 +215,8 @@ body:not([data-tela="inicio"]) .logo {
 }
 .btn:active:not(:disabled) { transform: translateY(3px); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn:focus-visible, .etiqueta:focus-visible, .ficha:focus-visible, .caixa:focus-visible, .btn-icone:focus-visible {
+.btn:focus-visible, .etiqueta:focus-visible, .ficha:focus-visible, .caixa:focus-visible, .btn-icone:focus-visible,
+.link-limpar:focus-visible, .item-remover:focus-visible {
   outline: 3px solid var(--azul);
   outline-offset: 3px;
 }
@@ -297,6 +302,44 @@ input:focus, textarea:focus { outline: none; border-color: var(--azul); }
   border-radius: 8px;
   border: 2px dashed var(--tinta-suave);
 }
+
+/* ---------- Editar jogadores ---------- */
+.lista-edicao { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.item-edicao {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 4px 0 4px 4px;
+  border-bottom: 1px dashed var(--papel-linha);
+  font-family: var(--fonte-maquina);
+  font-size: 1.1rem;
+}
+.item-nome { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.item-voce {
+  flex: none;
+  font-family: var(--fonte-texto);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--azul);
+  border: 2px solid currentColor;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+.item-remover {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--vermelho);
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+.item-remover:active { background: var(--papel-linha); }
 
 /* ---------- Etiquetas (nomes) ---------- */
 .etiquetas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 14px; }
@@ -641,6 +684,70 @@ input:focus, textarea:focus { outline: none; border-color: var(--azul); }
 }
 .ficha.riscada { opacity: 0.5; }
 .ficha.riscada::after { transform: rotate(-4deg) scaleX(1); }
+
+/* talvez: fundo marca-texto + selinho "?" no canto */
+.ficha.talvez {
+  background: var(--talvez-fundo);
+  box-shadow: inset 0 0 0 2px var(--talvez), 0 3px 8px rgba(60, 35, 10, 0.15);
+}
+.ficha::before {
+  content: "?";
+  position: absolute;
+  top: -7px;
+  right: -5px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--talvez);
+  color: var(--papel);
+  font-family: var(--fonte-carimbo);
+  font-size: 0.85rem;
+  line-height: 1;
+  transform: scale(0) rotate(-30deg);
+  transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+.ficha.talvez::before { transform: scale(1) rotate(8deg); }
+
+/* legenda: o que cada toque faz, com mini-fichas no estilo das marcas */
+.legenda-marcas {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  font-family: var(--fonte-maquina);
+  font-size: 0.9rem;
+}
+.mini {
+  padding: 2px 9px;
+  border-radius: 5px;
+  background: var(--papel);
+  font-family: var(--fonte-texto);
+  font-size: 0.8rem;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+.mini-talvez { background: var(--talvez-fundo); box-shadow: inset 0 0 0 2px var(--talvez); }
+.mini-riscada {
+  opacity: 0.6;
+  text-decoration: line-through 2px var(--vermelho);
+}
+
+.contagem-locais { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.link-limpar {
+  flex: none;
+  min-height: 32px;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  color: var(--tinta);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 
 /* ---------- Barra inferior ---------- */
 .barra {

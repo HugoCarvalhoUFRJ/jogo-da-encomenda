@@ -158,9 +158,12 @@
     const base = textoBase(semente, jogadores, versao);
 
     // Locais: uma permutação por "ciclo" — nenhum local se repete até a lista acabar.
+    // Depende só da semente (não dos nomes): se alguém entra ou sai no meio do
+    // jogo, a sequência de locais continua de onde estava, sem repetir.
     const L = locais.length;
     const ciclo = Math.floor((rodada - 1) / L);
-    const ordem = embaralhar(locais.map((_, i) => i), rngDe(base + '|locais|' + ciclo));
+    const baseLocais = ['encomenda', versao, chave(semente)].join('|');
+    const ordem = embaralhar(locais.map((_, i) => i), rngDe(baseLocais + '|locais|' + ciclo));
     const local = locais[ordem[(rodada - 1) % L]];
 
     const rng = rngDe(base + '|rodada|' + rodada);

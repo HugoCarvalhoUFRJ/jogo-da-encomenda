@@ -8,6 +8,8 @@
   const E = window.Encomenda;
   const VERSAO = window.ENCOMENDA_LOCAIS.versao;
   const LOCAIS = window.ENCOMENDA_LOCAIS.locais;
+  // Só para exibir: o sorteio usa a ordem original de locais.js.
+  const LOCAIS_ALFABETICO = LOCAIS.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 
   const $ = (sel) => document.querySelector(sel);
 
@@ -46,7 +48,7 @@
 
   // ---------- Estado ----------
   let partida = null; // { semente, jogadores: [{chave, nome}], id }
-  let estado = null;  // { jogador: chave|null, rodada, riscados: [nomes], riscadosRodada }
+  let estado = null;  // { jogador: chave|null, rodada, riscados: [nomes], talvez: [nomes], riscadosRodada }
 
   function montarPartida(semente, nomes) {
     const sem = String(semente || '').trim();
@@ -67,11 +69,16 @@
     const salvo = memoria.ler('partida:' + p.id) || {};
     const rodadaSalva = Number(salvo.rodada) || 1;
     const rodada = Math.max(Number(rodadaPedida) || 1, rodadaSalva);
-    const jogadorValido = p.jogadores.some((j) => j.chave === salvo.jogador) ? salvo.jogador : null;
+    const naLista = (k) => p.jogadores.some((j) => j.chave === k);
+    // Lista de jogadores mudou (link novo, mesma semente)? Continua sendo a mesma pessoa.
+    const ultima = memoria.ler('ultima');
+    const jogadorAnterior = ultima && E.chave(ultima.semente) === E.chave(p.semente) ? ultima.jogador : null;
+    const mesmaRodada = salvo.riscadosRodada === rodada;
     estado = {
-      jogador: jogadorValido,
+      jogador: naLista(salvo.jogador) ? salvo.jogador : naLista(jogadorAnterior) ? jogadorAnterior : null,
       rodada,
-      riscados: salvo.riscadosRodada === rodada && Array.isArray(salvo.riscados) ? salvo.riscados : [],
+      riscados: mesmaRodada && Array.isArray(salvo.riscados) ? salvo.riscados : [],
+      talvez: mesmaRodada && Array.isArray(salvo.talvez) ? salvo.talvez : [],
       riscadosRodada: rodada,
     };
     if (rodadaSalva > (Number(rodadaPedida) || 1)) {
@@ -83,7 +90,7 @@
   function salvar() {
     if (!partida) return;
     memoria.gravar('partida:' + partida.id, estado);
-    memoria.gravar('ultima', { semente: partida.semente, nomes: nomes(), rodada: estado.rodada });
+    memoria.gravar('ultima', { semente: partida.semente, nomes: nomes(), rodada: estado.rodada, jogador: estado.jogador });
     try { history.replaceState(null, '', linkDaPartida()); } catch (_) { /* file:// em alguns navegadores */ }
   }
 
@@ -105,6 +112,7 @@
     if (nome === 'inicio') prepararInicio();
     if (nome === 'criar') prepararCriar();
     if (nome === 'compartilhar') prepararCompartilhar();
+    if (nome === 'jogadores') prepararJogadores();
     if (nome === 'nome') prepararNome();
     if (nome === 'rodada') prepararRodada();
   }
@@ -189,22 +197,27 @@
     validarCriar();
   }
 
-  function validarCriar() {
-    const { jogadores, duplicados } = E.normalizarNomes(linhas($('#criar-nomes').value));
-    const cont = $('#criar-contador');
+  // Escreve no contador se a lista serve para jogar; devolve true se serve.
+  function avaliarNomes(lista, cont) {
+    const { jogadores, duplicados } = E.normalizarNomes(lista);
     const n = jogadores.length;
-    let ok = false;
     if (duplicados.length) {
       cont.textContent = '⚠️ Nome repetido: ' + duplicados.join(', ') + '. Use um apelido diferente.';
       cont.className = 'ajuda ruim';
-    } else if (n < E.MIN_JOGADORES) {
+      return false;
+    }
+    if (n < E.MIN_JOGADORES) {
       cont.textContent = n + (n === 1 ? ' jogador' : ' jogadores') + '. Mínimo de ' + E.MIN_JOGADORES + '.';
       cont.className = 'ajuda';
-    } else {
-      cont.textContent = '✔ ' + n + ' jogadores: 1 impostor e ' + (n - 1) + ' no local.';
-      cont.className = 'ajuda ok';
-      ok = true;
+      return false;
     }
+    cont.textContent = '✔ ' + n + ' jogadores: 1 impostor e ' + (n - 1) + ' no local.';
+    cont.className = 'ajuda ok';
+    return true;
+  }
+
+  function validarCriar() {
+    const ok = avaliarNomes(linhas($('#criar-nomes').value), $('#criar-contador'));
     $('#btn-gerar').disabled = !ok || !E.chave($('#criar-semente').value);
   }
 
@@ -220,7 +233,7 @@
     const r = montarPartida($('#criar-semente').value, linhas($('#criar-nomes').value));
     if (r.erro) { avisar(r.erro); return; }
     entrarNaPartida(r.partida, 1);
-    mostrarTela('compartilhar');
+    abrirCompartilhar('nova');
   });
 
   // ---------- Tela: manual ----------
@@ -239,8 +252,27 @@
   });
 
   // ---------- Tela: compartilhar ----------
+  const TEXTOS_COMPARTILHAR = {
+    nova: ['Partida pronta!', 'Mande este link para os jogadores:'],
+    jogadores: ['Lista atualizada!', 'Link com a nova lista:'],
+    menu: ['Compartilhar', 'Link da partida (já na rodada atual):'],
+  };
+  let motivoCompartilhar = 'nova';
+  let chegaram = []; // quem entrou na última mudança da lista: só esses precisam do link
+
+  function abrirCompartilhar(motivo) {
+    motivoCompartilhar = motivo;
+    mostrarTela('compartilhar');
+  }
+
   function prepararCompartilhar() {
     const link = linkDaPartida();
+    let [titulo, texto] = TEXTOS_COMPARTILHAR[motivoCompartilhar] || TEXTOS_COMPARTILHAR.nova;
+    const mudouLista = motivoCompartilhar === 'jogadores';
+    if (mudouLista && chegaram.length) texto = 'Quem chegou (' + chegaram.join(', ') + ') precisa deste link:';
+    $('#compartilhar-titulo').textContent = titulo;
+    $('#compartilhar-texto').textContent = texto;
+    $('#compartilhar-nota').hidden = !mudouLista;
     $('#link-partida').value = link;
     $('#btn-compartilhar').hidden = typeof navigator.share !== 'function';
     $('#resumo-partida').textContent =
@@ -299,6 +331,99 @@
   });
   $('#btn-ir-jogo').addEventListener('click', irParaJogo);
 
+  // ---------- Tela: entrou/saiu alguém ----------
+  let rascunho = []; // nomes sendo editados
+
+  function prepararJogadores() {
+    const lista = $('#lista-edicao');
+    lista.replaceChildren();
+    rascunho.forEach((nome, i) => {
+      const souEu = E.chave(nome) === estado.jogador;
+      lista.append(
+        el('li', { class: 'item-edicao' },
+          el('span', { class: 'item-nome', text: nome }),
+          souEu ? el('small', { class: 'item-voce', text: 'você' }) : null,
+          el('button', {
+            type: 'button',
+            class: 'item-remover',
+            'aria-label': 'Remover ' + nome,
+            onclick: () => { rascunho.splice(i, 1); prepararJogadores(); },
+          }, '✕'))
+      );
+    });
+    validarJogadores();
+  }
+
+  function mudancasNaLista() {
+    const antes = new Set(nomes().map(E.chave));
+    const depois = new Set(rascunho.map(E.chave));
+    return {
+      entraram: rascunho.filter((n) => !antes.has(E.chave(n))),
+      sairam: nomes().filter((n) => !depois.has(E.chave(n))),
+    };
+  }
+
+  function validarJogadores() {
+    const cont = $('#jogadores-contador');
+    let ok = avaliarNomes(rascunho, cont);
+    const { entraram, sairam } = mudancasNaLista();
+    if (ok && !entraram.length && !sairam.length) {
+      cont.textContent = 'Nada mudou ainda.';
+      cont.className = 'ajuda';
+      ok = false;
+    } else if (ok) {
+      const mudancas = [];
+      if (entraram.length) mudancas.push('entra ' + entraram.join(', '));
+      if (sairam.length) mudancas.push('sai ' + sairam.join(', '));
+      cont.textContent += ' (' + mudancas.join('; ') + ')';
+    }
+    $('#btn-salvar-jogadores').disabled = !ok;
+  }
+
+  function adicionarJogador() {
+    const campo = $('#novo-jogador');
+    const nome = E.limparNome(campo.value);
+    if (!nome) { campo.focus(); return; }
+    const existente = rascunho.find((n) => E.chave(n) === E.chave(nome));
+    if (existente) {
+      avisar(existente + ' já está na lista.');
+      return;
+    }
+    rascunho.push(nome);
+    campo.value = '';
+    prepararJogadores();
+    campo.focus();
+  }
+
+  $('#btn-add-jogador').addEventListener('click', adicionarJogador);
+  $('#novo-jogador').addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') {
+      ev.preventDefault(); // Enter aqui adiciona, não salva o formulário
+      adicionarJogador();
+    }
+  });
+  $('#btn-cancelar-jogadores').addEventListener('click', () => irParaJogo());
+
+  $('#form-jogadores').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    if ($('#btn-salvar-jogadores').disabled) return;
+    const r = montarPartida(partida.semente, rascunho);
+    if (r.erro) { avisar(r.erro); return; }
+    const prox = estado.rodada + 1;
+    const { entraram } = mudancasNaLista();
+    const ok = await confirmar(
+      'Salvar a nova lista?',
+      'A partida continua na rodada ' + prox + '. ' +
+        (entraram.length ? 'Quem chegou (' + entraram.join(', ') + ') vai precisar do link ou do QR code. ' : '') +
+        'Quem já está jogando pode abrir o link novo ou fazer esta mesma mudança no próprio celular.',
+      'Salvar'
+    );
+    if (!ok) return;
+    chegaram = entraram;
+    entrarNaPartida(r.partida, prox);
+    abrirCompartilhar('jogadores');
+  });
+
   // ---------- Tela: escolher nome ----------
   function prepararNome() {
     const lista = $('#lista-nomes');
@@ -356,38 +481,73 @@
     renderizarLocais();
   }
 
+  // ---------- Marcas nos locais: '?' = talvez, 'x' = descartado ----------
+  const PROXIMA_MARCA = { null: '?', '?': 'x', x: null }; // cada toque avança um passo
+
+  function marcaDe(nome) {
+    if (estado.riscados.includes(nome)) return 'x';
+    if (estado.talvez.includes(nome)) return '?';
+    return null;
+  }
+
+  function pintarFicha(botao, marca) {
+    botao.classList.toggle('riscada', marca === 'x');
+    botao.classList.toggle('talvez', marca === '?');
+    botao.setAttribute('aria-label',
+      botao.dataset.nome + (marca === 'x' ? ' (descartado)' : marca === '?' ? ' (talvez)' : ''));
+  }
+
+  function atualizarContagem() {
+    const possiveis = LOCAIS.length - estado.riscados.length;
+    const t = estado.talvez.length;
+    $('#locais-contagem').textContent =
+      possiveis + ' de ' + LOCAIS.length + ' ainda possíveis' + (t ? ' · ' + t + ' talvez' : '');
+    $('#btn-limpar-marcas').hidden = !estado.riscados.length && !t;
+  }
+
   function renderizarLocais() {
     const lista = $('#lista-locais');
     lista.replaceChildren();
-    const riscados = new Set(estado.riscados);
-    for (const local of LOCAIS) {
-      const riscado = riscados.has(local.nome);
+    for (const local of LOCAIS_ALFABETICO) {
       const b = el('button', {
         type: 'button',
-        class: 'ficha' + (riscado ? ' riscada' : ''),
-        'aria-pressed': String(riscado),
-        onclick: () => alternarRisco(local.nome, b),
+        class: 'ficha',
+        'data-nome': local.nome,
+        onclick: () => marcarLocal(local.nome, b),
       },
       el('span', { class: 'ficha-emoji', 'aria-hidden': 'true', text: local.emoji }),
-      el('span', { text: local.nome }));
+      el('span', { class: 'ficha-nome', text: local.nome }));
+      pintarFicha(b, marcaDe(local.nome));
       lista.append(b);
     }
+    atualizarContagem();
   }
 
-  function alternarRisco(nome, botao) {
-    const s = new Set(estado.riscados);
-    if (s.has(nome)) s.delete(nome);
-    else s.add(nome);
-    estado.riscados = Array.from(s);
+  function marcarLocal(nome, botao) {
+    const nova = PROXIMA_MARCA[marcaDe(nome)];
+    estado.riscados = estado.riscados.filter((n) => n !== nome);
+    estado.talvez = estado.talvez.filter((n) => n !== nome);
+    if (nova === 'x') estado.riscados.push(nome);
+    if (nova === '?') estado.talvez.push(nome);
     estado.riscadosRodada = estado.rodada;
-    botao.classList.toggle('riscada', s.has(nome));
-    botao.setAttribute('aria-pressed', String(s.has(nome)));
+    pintarFicha(botao, nova);
+    atualizarContagem();
     salvar();
   }
+
+  $('#btn-limpar-marcas').addEventListener('click', async () => {
+    const ok = await confirmar('Limpar marcas?', 'Todos os locais voltam a ficar sem marca.', 'Limpar');
+    if (!ok) return;
+    estado.riscados = [];
+    estado.talvez = [];
+    salvar();
+    renderizarLocais();
+  });
 
   function mudarRodada(nova) {
     estado.rodada = nova;
     estado.riscados = [];
+    estado.talvez = [];
     estado.riscadosRodada = nova;
     salvar();
     prepararRodada();
@@ -461,7 +621,11 @@
     menu.close();
     const acao = b.dataset.acao;
     if (acao === 'compartilhar') {
-      mostrarTela('compartilhar');
+      abrirCompartilhar('menu');
+    } else if (acao === 'jogadores') {
+      rascunho = nomes().slice();
+      $('#novo-jogador').value = '';
+      mostrarTela('jogadores');
     } else if (acao === 'anterior') {
       const ok = await confirmar('Voltar para a rodada ' + (estado.rodada - 1) + '?', 'Use isto se você avançou sem querer.', 'Voltar');
       if (ok) mudarRodada(estado.rodada - 1);

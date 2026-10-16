@@ -20,6 +20,10 @@ Jogo de dedução para jogar ao vivo com amigos, cada um no próprio celular. Fu
 4. Todos conferem em voz alta os **3 emojis do selo**. Se forem iguais em todos os celulares, a partida está sincronizada.
 5. Cada um **segura a caixa** para ver onde está. Ao soltar, ela fecha de novo.
 6. Para jogar outra rodada, todos tocam em **Próxima rodada**. Não precisa de link novo.
+7. Na lista de locais, toque **uma vez** para marcar como **talvez**, **duas** para **não é** (riscado) e **três** para limpar. As marcas são só suas e zeram a cada rodada.
+8. Chegou ou saiu alguém? No menu **⋯**, toque em **Entrou/saiu alguém** e ajuste a lista. A partida segue na próxima rodada, sem repetir locais. Depois disso:
+   - **quem acabou de chegar precisa do link novo** (ou do QR code);
+   - quem já está jogando pode abrir o link novo (cai direto no próprio nome) **ou** fazer a mesma mudança no próprio celular, sem avançar a rodada antes. Confiram os 3 emojis no fim.
 
 Sem link? Use **Entrar digitando a semente**. Todos digitam a mesma semente e os mesmos nomes. A ordem dos nomes, maiúsculas e acentos não importam.
 
@@ -28,7 +32,7 @@ Sem link? Use **Entrar digitando a semente**. Todos digitam a mesma semente e os
 O sorteio é **determinístico**. A partir de `semente + lista de nomes + número da rodada`, todo navegador calcula exatamente o mesmo resultado: um hash ([cyrb53](js/rng.js)) alimenta um gerador pseudoaleatório (mulberry32). Assim, todos os celulares "concordam" sobre o local e sobre quem é o impostor sem trocar mensagens, e cada um só mostra o resultado do próprio jogador.
 
 - Os nomes são normalizados (sem acentos, minúsculas, ordem alfabética) antes do sorteio.
-- Os locais não se repetem até a lista inteira ser usada.
+- Os locais não se repetem até a lista inteira ser usada. A sequência de locais depende só da semente, então trocar jogadores no meio não a embaralha de novo.
 - O código de 3 emojis serve para detectar erros de digitação ou versões diferentes.
 
 > Dá para trapacear tocando no nome de outra pessoa. É um jogo entre amigos, então vale a honra! 😉
@@ -46,7 +50,7 @@ teste/            testes do sorteio (abra teste/index.html no navegador)
 
 ### Editando os locais
 
-Edite [js/locais.js](js/locais.js). **Sempre que mudar a lista, troque a `versao`** (ex.: `'v2'` → `'v3'`). Quem estiver com a versão antiga em cache vai ver emojis de conferência diferentes, em vez de receber outro local sem perceber. Depois atualize o teste de compatibilidade em [teste/testes.js](teste/testes.js): rode os testes, que mostram o valor novo, e copie esse valor para `ESPERADO_COMPAT`.
+Edite [js/locais.js](js/locais.js). Na tela eles aparecem em ordem alfabética, mas a ordem do arquivo entra no sorteio. **Sempre que mudar a lista ou o sorteio, troque a `versao`** (ex.: `'v3'` → `'v4'`). Quem estiver com a versão antiga em cache vai ver emojis de conferência diferentes, em vez de receber outro local sem perceber. Depois atualize o teste de compatibilidade em [teste/testes.js](teste/testes.js): rode os testes, que mostram o valor novo, e copie esse valor para `ESPERADO_COMPAT`.
 
 ## Rodando localmente
 
@@ -58,3 +62,13 @@ Basta abrir `index.html` no navegador, com dois cliques no arquivo. Para testar 
 2. No repositório, vá em **Settings → Pages**.
 3. Em **Build and deployment**, escolha **Deploy from a branch**, branch `main`, pasta `/ (root)`, e salve.
 4. Em um ou dois minutos, o site fica disponível em `https://SEU-USUARIO.github.io/NOME-DO-REPOSITORIO/`.
+
+### Com domínio próprio (ex.: `hugocarvalho.mat.br/jogo-da-encomenda/`)
+
+Se o domínio já aponta para o site de usuário do GitHub Pages (o repositório `SEU-USUARIO.github.io`, com o domínio configurado em **Settings → Pages → Custom domain**), todo repositório com Pages ligado aparece automaticamente como subpasta do domínio:
+
+1. Dê ao repositório o nome `jogo-da-encomenda` (**Settings → General → Repository name**).
+2. Ligue o Pages nele como acima. **Não** coloque arquivo `CNAME` neste repositório: o domínio é herdado do site de usuário.
+3. Pronto: `https://hugocarvalho.mat.br/jogo-da-encomenda/`.
+
+Todos os caminhos do site são relativos, então ele funciona em subpasta sem ajustes.

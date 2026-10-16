@@ -2,7 +2,7 @@
  * Lista de locais do Jogo da Encomenda.
  *
  * IMPORTANTE: a versão entra no sorteio. Se você alterar a lista (adicionar,
- * remover ou reordenar locais), troque a versão (ex.: 'v2' → 'v3'). Assim, quem estiver
+ * remover ou reordenar locais) ou o sorteio em rng.js, troque a versão (ex.: 'v3' → 'v4'). Assim, quem estiver
  * com o site antigo em cache vê códigos de conferência diferentes, em vez de
  * receber um local diferente sem perceber.
  */
@@ -10,7 +10,8 @@
   'use strict';
 
   const dados = {
-    versao: 'v2',
+    // A ordem aqui entra no sorteio; na tela os locais aparecem em ordem alfabética.
+    versao: 'v3',
     locais: [
       { nome: 'Hospital', emoji: '🏥' },
       { nome: 'Usina nuclear', emoji: '☢️' },
