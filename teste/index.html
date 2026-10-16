@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Testes…</title>
+  <style>
+    body { margin: 0; padding: 16px; font: 15px/1.5 ui-monospace, Consolas, monospace; background: #fbf7ef; color: #2a2018; }
+    @media (prefers-color-scheme: dark) { body { background: #2b2118; color: #f3e9da; } }
+    h1 { font-size: 1.2rem; }
+    pre { white-space: pre-wrap; }
+    body[data-resultado="ok"] h1 { color: #2e7d32; }
+    body[data-resultado="falhou"] h1 { color: #c62828; }
+  </style>
+</head>
+<body>
+  <h1>Testes do sorteio — Jogo da Encomenda</h1>
+  <pre id="saida">Rodando…</pre>
+  <script src="../js/locais.js"></script>
+  <script src="../js/rng.js"></script>
+  <script src="testes.js"></script>
+</body>
+</html>
