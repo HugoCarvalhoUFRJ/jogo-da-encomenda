@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Jogo da Encomenda</title>
+  <meta name="description" content="Todos sabem onde estão… menos um. Descubra quem é o impostor!">
+  <meta name="theme-color" content="#c8a27a" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#2b2118" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Inter:wght@400;600;800&family=Special+Elite&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-tela="inicio">
+  <div class="app">
+    <header class="topo">
+      <h1 class="logo carimbo">Jogo da<br>Encomenda</h1>
+    </header>
+
+    <main>
+      <!-- ============ INÍCIO ============ -->
+      <section id="tela-inicio" class="tela">
+        <div class="papel com-fita intro">
+          <p class="maquina">Todos sabem <strong>onde estão</strong>… menos um.</p>
+          <p>Descubra quem é o <strong>impostor</strong>. Ou, se for você, descubra o local sem se entregar.</p>
+        </div>
+
+        <div class="acoes">
+          <button type="button" class="btn btn-primario" data-ir="criar">📦 Criar partida</button>
+          <button type="button" class="btn btn-secundario" id="btn-continuar" hidden>↩ Continuar partida</button>
+          <button type="button" class="btn btn-fantasma" data-ir="manual">⌨️ Entrar digitando a semente</button>
+        </div>
+
+        <details class="papel regras">
+          <summary>Como jogar</summary>
+          <ol>
+            <li>O <strong>anfitrião</strong> cria a partida com o nome de todo mundo e manda o link no grupo.</li>
+            <li>Cada um abre o link no próprio celular e <strong>toca no seu nome</strong>.</li>
+            <li>Confiram em voz alta os <strong>3 emojis</strong> do selo: se forem iguais para todos, está tudo sincronizado.</li>
+            <li><strong>Segure a caixa</strong> para ver onde você está. Todos veem o mesmo local, exceto um: o <strong>impostor</strong>.</li>
+            <li>Façam perguntas uns aos outros. Quem sabe o local tenta achar o impostor sem entregar o local. O impostor tenta descobrir o local sem ser descoberto.</li>
+            <li>No fim, votem no suspeito. Se o impostor for pego, ainda pode tentar adivinhar o local para virar o jogo!</li>
+            <li>Para jogar de novo, todos tocam em <strong>Próxima rodada</strong>. Não precisa de link novo.</li>
+          </ol>
+        </details>
+      </section>
+
+      <!-- ============ CRIAR PARTIDA ============ -->
+      <section id="tela-criar" class="tela" hidden>
+        <h2 class="titulo">Nova partida</h2>
+        <form id="form-criar" class="papel com-fita formulario" novalidate>
+          <label class="campo">
+            <span class="rotulo">Jogadores <small>(um por linha)</small></span>
+            <textarea id="criar-nomes" rows="6" placeholder="Ana&#10;Beto&#10;Caio&#10;Duda" autocapitalize="words" spellcheck="false"></textarea>
+            <span class="ajuda" id="criar-contador" aria-live="polite">Mínimo de 3 jogadores.</span>
+          </label>
+          <label class="campo">
+            <span class="rotulo">Semente <small>(qualquer palavra)</small></span>
+            <span class="linha-input">
+              <input id="criar-semente" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">
+              <button type="button" class="btn-icone" id="btn-sortear-semente" aria-label="Sortear outra semente">🎲</button>
+            </span>
+            <span class="ajuda">Quem receber o link não precisa digitar nada.</span>
+          </label>
+          <button type="submit" class="btn btn-primario" id="btn-gerar" disabled>Gerar partida</button>
+        </form>
+        <button type="button" class="btn btn-fantasma" data-ir="inicio">← Voltar</button>
+      </section>
+
+      <!-- ============ ENTRADA MANUAL ============ -->
+      <section id="tela-manual" class="tela" hidden>
+        <h2 class="titulo">Entrar digitando</h2>
+        <form id="form-manual" class="papel com-fita formulario" novalidate>
+          <p class="ajuda">Todos precisam digitar <strong>a mesma semente</strong> e <strong>os mesmos nomes</strong>. A ordem dos nomes, maiúsculas e acentos não importam.</p>
+          <label class="campo">
+            <span class="rotulo">Semente</span>
+            <input id="manual-semente" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">
+          </label>
+          <label class="campo">
+            <span class="rotulo">Jogadores <small>(um por linha)</small></span>
+            <textarea id="manual-nomes" rows="6" autocapitalize="words" spellcheck="false"></textarea>
+          </label>
+          <label class="campo">
+            <span class="rotulo">Rodada</span>
+            <input id="manual-rodada" type="number" inputmode="numeric" min="1" value="1">
+          </label>
+          <p class="erro" id="manual-erro" role="alert" hidden></p>
+          <button type="submit" class="btn btn-primario">Entrar</button>
+        </form>
+        <button type="button" class="btn btn-fantasma" data-ir="inicio">← Voltar</button>
+      </section>
+
+      <!-- ============ COMPARTILHAR ============ -->
+      <section id="tela-compartilhar" class="tela" hidden>
+        <h2 class="titulo">Partida pronta!</h2>
+        <div class="papel com-fita compartilhar">
+          <p class="maquina">Mande este link para os jogadores:</p>
+          <input id="link-partida" class="link" type="text" readonly aria-label="Link da partida">
+          <div class="acoes-lado">
+            <button type="button" class="btn btn-primario" id="btn-compartilhar">📤 Compartilhar</button>
+            <button type="button" class="btn btn-secundario" id="btn-copiar">📋 Copiar</button>
+          </div>
+          <div id="qr" class="qr" aria-label="QR code do link da partida"></div>
+          <p class="ajuda" id="resumo-partida"></p>
+        </div>
+        <button type="button" class="btn btn-primario" id="btn-ir-jogo">Escolher meu nome →</button>
+      </section>
+
+      <!-- ============ ESCOLHER NOME ============ -->
+      <section id="tela-nome" class="tela" hidden>
+        <h2 class="titulo">Quem é você?</h2>
+        <p class="subtitulo">Toque no seu nome.</p>
+        <div id="lista-nomes" class="etiquetas"></div>
+        <p class="ajuda centro" id="nome-resumo"></p>
+      </section>
+
+      <!-- ============ RODADA ============ -->
+      <section id="tela-rodada" class="tela" hidden>
+        <div class="cabecalho-rodada">
+          <div class="rastreio">
+            <span class="rastreio-rotulo">Rodada</span>
+            <span class="rastreio-numero" id="rodada-numero">Nº 01</span>
+          </div>
+          <div class="agente">
+            <span class="rotulo">Agente</span>
+            <strong id="rodada-agente"></strong>
+          </div>
+        </div>
+
+        <div class="selo" aria-describedby="selo-legenda">
+          <span class="selo-topo">Código da rodada</span>
+          <span class="selo-emojis" id="rodada-conferencia"></span>
+          <span class="selo-legenda" id="selo-legenda">Todos devem ver os mesmos 3 emojis</span>
+        </div>
+
+        <div class="palco">
+          <button type="button" class="caixa" id="caixa" aria-pressed="false"
+                  aria-label="Segure para revelar seu local">
+            <span class="conteudo" id="caixa-conteudo"></span>
+            <span class="aba aba-esq" aria-hidden="true">
+              <span class="face frente"><span class="carimbo fragil">Sigiloso</span></span>
+              <span class="face verso"></span>
+            </span>
+            <span class="aba aba-dir" aria-hidden="true">
+              <span class="face frente"></span>
+              <span class="face verso"></span>
+            </span>
+            <span class="adesivo" aria-hidden="true">
+              <span class="adesivo-linha"><small>Agente:</small> <b id="adesivo-para"></b></span>
+              <span class="adesivo-linha"><small>Missão:</small> <b>ultrassecreta</b></span>
+              <span class="adesivo-acao">✋ Segure para revelar</span>
+            </span>
+          </button>
+        </div>
+        <p class="dica-caixa">Segure para revelar · solte para esconder</p>
+
+        <section class="locais" aria-labelledby="titulo-locais">
+          <h3 id="titulo-locais">Locais possíveis</h3>
+          <p class="ajuda">Toque para riscar os que você já descartou.</p>
+          <div id="lista-locais" class="fichas"></div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <!-- Barra inferior da rodada -->
+  <nav class="barra" aria-label="Ações da rodada">
+    <div class="barra-interna">
+      <button type="button" class="btn btn-secundario btn-menu" id="btn-menu" aria-label="Mais opções">⋯</button>
+      <button type="button" class="btn btn-primario btn-proxima" id="btn-proxima">Próxima rodada ▶</button>
+    </div>
+  </nav>
+
+  <!-- Menu -->
+  <dialog id="dlg-menu" class="papel dialogo">
+    <h3>Opções</h3>
+    <div class="acoes">
+      <button type="button" class="btn btn-secundario" data-acao="compartilhar">📤 Compartilhar partida</button>
+      <button type="button" class="btn btn-secundario" data-acao="anterior">⏪ Voltar uma rodada</button>
+      <button type="button" class="btn btn-secundario" data-acao="trocar">🔁 Trocar de jogador</button>
+      <button type="button" class="btn btn-secundario" data-acao="sair">🚪 Sair da partida</button>
+      <button type="button" class="btn btn-fantasma" data-acao="fechar">Fechar</button>
+    </div>
+  </dialog>
+
+  <!-- Confirmação genérica -->
+  <dialog id="dlg-confirmar" class="papel dialogo">
+    <h3 id="confirmar-titulo"></h3>
+    <p id="confirmar-texto"></p>
+    <div class="acoes-lado">
+      <button type="button" class="btn btn-fantasma" id="confirmar-nao">Cancelar</button>
+      <button type="button" class="btn btn-primario" id="confirmar-sim">OK</button>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/locais.js"></script>
+  <script src="js/rng.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+  <script src="js/app.js" defer></script>
+</body>
+</html>
